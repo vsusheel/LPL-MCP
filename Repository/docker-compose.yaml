@@ -1,0 +1,68 @@
+version: '3.8' # Recommended version for modern Docker Compose features
+
+services:
+  # PostgreSQL Database Service
+  db:
+    image: postgres # Use a specific, stable version of PostgreSQL
+    container_name: my-postgres-db # Optional, but good for clear identification in `docker ps`
+    restart: unless-stopped # Always restart the container unless explicitly stopped
+    environment:
+      POSTGRES_DB: lpl_db # Your database name for Jira
+      POSTGRES_USER: lpl_user # Your database user for Jira
+      POSTGRES_PASSWORD: password # <-- IMPORTANT: Replace with a strong, secure password
+      # POSTGRES_HOST_AUTH_METHOD: trust # ONLY for quick tests, NOT recommended for real usage
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persistent volume for DB data
+    # Expose port to host only if you need to access DB from your local machine (e.g., DBeaver, psql)
+    # If Jira is the ONLY consumer, you can omit this port mapping for security.
+    ports:
+      - "5432:5432" # Maps host_port:container_port. Host: 5432, Container: 5432
+
+  # Atlassian Jira Software Service
+  jira:
+    image: atlassian/jira-software:9.4.10 # Use a specific, stable Jira version
+    container_name: my-jira-app # Optional, but good for clear identification
+    restart: unless-stopped # Always restart the container unless explicitly stopped
+    depends_on: # Ensures 'db' service starts before 'jira'
+      - db
+    environment:
+      # Database connection details passed as environment variables
+      # Jira expects these to automatically configure dbconfig.xml on first run
+      # IMPORTANT: Hostname is the 'service name' of the database container ('db')
+      JDBC_DATABASE_URL: jdbc:postgresql://db:5432/lpl_db
+      JDBC_DATABASE_USERNAME: lpl_user
+      JDBC_DATABASE_PASSWORD: password # <-- IMPORTANT: Use the same password as for DB service
+
+      # JIRA_HOME: /var/atlassian/jira # Default location within the container, usually not needed to set explicitly
+      # JVM memory allocation (adjust based on your available RAM and Jira's needs)
+      # Minimum recommended by Atlassian for Jira is 2GB.
+      JVM_MAXIMUM_MEMORY: "2048m" # Example: 2GB. Adjust this based on your host's RAM
+      JVM_MINIMUM_MEMORY: "1024m" # Example: 1GB
+
+      # Optional: Set timezone for Jira (adjust as needed for your location)
+      JVM_EXTRA_ARGS: "-Duser.timezone=America/Chicago" # Example: Central Time Zone
+    volumes:
+      # Persistent volume for Jira's home directory (configuration, attachments, logs, etc.)
+      - jira_data:/var/atlassian/jira
+    ports:
+      - "8080:8080" # Maps host_port:container_port. Access Jira via http://localhost:8080
+  mysqldb:
+    image: mysql:8.0
+    container_name: my-mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: example # Root password for MySQL
+      MYSQL_DATABASE: mydb        # Default database to create
+      MYSQL_USER: myuser          # Custom user
+      MYSQL_PASSWORD: mypassword  # Password for custom user
+    volumes:
+      - mysqldata:/var/lib/mysql  # Persistent volume for MySQL data
+    ports:
+      - "3306:3306"              # Expose MySQL port to host
+    # Adjust or add more environment variables as needed
+
+# Define named volumes for data persistence
+volumes:
+  pgdata: # This volume will store PostgreSQL's database files
+  jira_data: # This volume will store Jira's home directory files
+  mysqldata: # This volume will store MySQL's database files
