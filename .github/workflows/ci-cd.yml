@@ -55,6 +55,12 @@ jobs:
       #     cd Repository/WebServer
       #     flake8 .
 
+      - name: Start FastAPI server
+        run: |
+          cd Repository/WebServer
+          nohup uvicorn web_server_enhanced:app --host 0.0.0.0 --port 8000 &
+          sleep 5  # Wait for the server to start
+
       - name: Run tests
         run: |
           pip install pytest
