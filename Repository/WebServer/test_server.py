@@ -68,7 +68,9 @@ def test_create_user() -> Optional[int]:
             print(f"✅ User created: ID {data['id']}, Name: {data['name']}")
             return data["id"]
         else:
-            print(f"❌ User creation failed: {response.status_code} - {response.text}")
+            print(
+                f"❌ User creation failed: {response.status_code} - {response.text}"
+            )
             return None
     except Exception as e:
         print(f"❌ User creation error: {e}")

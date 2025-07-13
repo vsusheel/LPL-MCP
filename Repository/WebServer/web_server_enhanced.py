@@ -18,10 +18,18 @@ logger = logging.getLogger(__name__)
 # Enhanced Pydantic models with examples for SwaggerHub
 class User(BaseModel):
     id: Optional[int] = None
-    name: str = Field(..., min_length=1, max_length=100, description="User's full name")
-    email: str = Field(..., description="User's email address (must be unique)")
-    age: Optional[int] = Field(None, ge=0, le=150, description="User's age in years")
-    is_active: bool = Field(True, description="Whether the user account is active")
+    name: str = Field(
+        ..., min_length=1, max_length=100, description="User's full name"
+    )
+    email: str = Field(
+        ..., description="User's email address (must be unique)"
+    )
+    age: Optional[int] = Field(
+        None, ge=0, le=150, description="User's age in years"
+    )
+    is_active: bool = Field(
+        True, description="Whether the user account is active"
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -195,8 +203,14 @@ def custom_openapi():
             },
         ],
         servers=[
-            {"url": "http://localhost:8000", "description": "Development server"},
-            {"url": "https://api.lpl-mcp.com", "description": "Production server"},
+            {
+                "url": "http://localhost:8000",
+                "description": "Development server",
+            },
+            {
+                "url": "https://api.lpl-mcp.com",
+                "description": "Production server",
+            },
         ],
     )
 
@@ -489,7 +503,10 @@ async def update_user(
     # Check if email is being changed and if it conflicts
     if user_update.email != users_db[user_id].email:
         for existing_user in users_db.values():
-            if existing_user.id != user_id and existing_user.email == user_update.email:
+            if (
+                existing_user.id != user_id
+                and existing_user.email == user_update.email
+            ):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Email already registered",
@@ -582,7 +599,10 @@ async def get_analytics():
 async def http_exception_handler(request, exc):
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail, "timestamp": datetime.utcnow().isoformat()},
+        content={
+            "detail": exc.detail,
+            "timestamp": datetime.utcnow().isoformat(),
+        },
     )
 
 
