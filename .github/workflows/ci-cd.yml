@@ -71,6 +71,9 @@ jobs:
         run: |
           cd Repository/WebService
           docker build -t inventory-api-test .
+      - name: List files in /app inside Docker (debug)
+        run: |
+          docker run --rm -w /app -v ${{ github.workspace }}/LPL-MCP/Repository/WebService:/app inventory-api-test ls -l /app
       - name: Run tests in Docker (with coverage)
         run: |
           docker run --rm -w /app -v ${{ github.workspace }}/LPL-MCP/Repository/WebService:/app inventory-api-test \
