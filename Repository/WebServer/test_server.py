@@ -93,17 +93,14 @@ def test_get_users() -> bool:
         return False
 
 
-def test_get_user(user_id: int) -> bool:
+def test_get_user():
     """Test getting a specific user"""
     try:
         response = requests.get(f"{BASE_URL}/users/{user_id}")
-        if response.status_code == 200:
-            user = response.json()
-            print(f"✅ Retrieved user: {user['name']} (ID: {user['id']})")
-            return True
-        else:
-            print(f"❌ Get user failed: {response.status_code}")
-            return False
+        assert response.status_code == 200
+        user = response.json()
+        print(f"✅ Retrieved user: {user['name']} (ID: {user['id']})")
+        return True
     except Exception as e:
         print(f"❌ Get user error: {e}")
         return False
@@ -196,7 +193,7 @@ def run_all_tests():
         tests_passed += 1
 
     # Test 5: Get specific user
-    if user_id and test_get_user(user_id):
+    if user_id and test_get_user():
         tests_passed += 1
 
     # Test 6: Update user
