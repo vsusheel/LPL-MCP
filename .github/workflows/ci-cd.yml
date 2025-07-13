@@ -7,9 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  build-and-test:
+  webserver-build-and-test:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:13
@@ -21,7 +20,6 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd="pg_isready -U lpl_user" --health-interval=10s --health-timeout=5s --health-retries=5
-
       mysql:
         image: mysql:8.0
         env:
@@ -33,53 +31,52 @@ jobs:
           - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping -h localhost" --health-interval=10s --health-timeout=5s --health-retries=5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           cd Repository/WebServer
           pip install --upgrade pip
           pip install -r requirements.txt
-
-      # - name: Lint with flake8
-      #   run: |
-      #     pip install flake8
-      #     cd Repository/WebServer
-      #     flake8 .
-
       - name: Start FastAPI server
         run: |
           cd Repository/WebServer
           nohup uvicorn web_server_enhanced:app --host 0.0.0.0 --port 8000 &
-          sleep 5  # Wait for the server to start
-
+          sleep 5
       - name: Run tests
         run: |
           pip install pytest
           cd Repository/WebServer
           pytest
-
       - name: Build Docker image
         run: |
           cd Repository/WebServer
           docker build -t webserver:latest .
 
-      # Optional: Push Docker image to Docker Hub
-      # - name: Log in to Docker Hub
-      #   uses: docker/login-action@v2
-      #   with:
-      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-      #     password: ${{ secrets.DOCKERHUB_TOKEN }}
-      #
-      # - name: Push Docker image
-      #   run: |
-      #     docker tag webserver:latest yourdockerhub/webserver:latest
-      #     docker push yourdockerhub/webserver:latest 
+  webservice-build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Build Docker image
+        run: |
+          cd Repository/WebService
+          docker build -t inventory-api-test .
+      - name: Run tests in Docker (with coverage)
+        run: |
+          docker run --rm -v ${{ github.workspace }}/LPL-MCP/Repository/WebService:/app inventory-api-test \
+            pytest --cov=inventory_api --cov-report=xml --cov-report=term
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: LPL-MCP/Repository/WebService/coverage.xml 
