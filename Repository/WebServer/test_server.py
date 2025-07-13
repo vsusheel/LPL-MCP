@@ -1,7 +1,28 @@
 import requests
+import pytest
 import time
 
 BASE_URL = "http://localhost:8000"
+
+@pytest.fixture(scope="module")
+def user_id():
+    user_data = {
+        "name": "Test User",
+        "email": "test@example.com",
+        "age": 25,
+        "is_active": True,
+    }
+    response = requests.post(
+        f"{BASE_URL}/users",
+        json=user_data,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 201
+    data = response.json()
+    yield data["id"]
+    # Teardown: delete the user after tests
+    requests.delete(f"{BASE_URL}/users/{data['id']}")
+
 
 def test_health_check():
     response = requests.get(f"{BASE_URL}/health")
@@ -19,9 +40,9 @@ def test_root_endpoint():
 
 def test_create_user():
     user_data = {
-        "name": "Test User",
-        "email": "test@example.com",
-        "age": 25,
+        "name": "Test User 2",
+        "email": "test2@example.com",
+        "age": 28,
         "is_active": True,
     }
     response = requests.post(
@@ -31,8 +52,10 @@ def test_create_user():
     )
     assert response.status_code == 201
     data = response.json()
+    assert data["name"] == user_data["name"]
     print(f"✅ User created: ID {data['id']}, Name: {data['name']}")
-    return data["id"]
+    # Cleanup
+    requests.delete(f"{BASE_URL}/users/{data['id']}")
 
 
 def test_get_users():
@@ -63,6 +86,7 @@ def test_update_user(user_id):
     )
     assert response.status_code == 200
     data = response.json()
+    assert data["name"] == update_data["name"]
     print(f"✅ User updated: {data['name']}")
 
 
@@ -78,67 +102,4 @@ def test_analytics():
 def test_delete_user(user_id):
     response = requests.delete(f"{BASE_URL}/users/{user_id}")
     assert response.status_code == 204
-    print(f"✅ User {user_id} deleted successfully")
-
-
-def run_all_tests():
-    print("🚀 Starting LPL-MCP Web Server Tests")
-    print("=" * 50)
-    tests_passed = 0
-    total_tests = 8
-    try:
-        test_health_check()
-        tests_passed += 1
-    except AssertionError:
-        print("❌ Health check failed")
-    try:
-        test_root_endpoint()
-        tests_passed += 1
-    except AssertionError:
-        print("❌ Root endpoint failed")
-    user_id = None
-    try:
-        user_id = test_create_user()
-        tests_passed += 1
-    except AssertionError:
-        print("❌ User creation failed")
-    try:
-        test_get_users()
-        tests_passed += 1
-    except AssertionError:
-        print("❌ Get users failed")
-    if user_id:
-        try:
-            test_get_user(user_id)
-            tests_passed += 1
-        except AssertionError:
-            print("❌ Get user failed")
-        try:
-            test_update_user(user_id)
-            tests_passed += 1
-        except AssertionError:
-            print("❌ Update user failed")
-    try:
-        test_analytics()
-        tests_passed += 1
-    except AssertionError:
-        print("❌ Analytics failed")
-    if user_id:
-        try:
-            test_delete_user(user_id)
-            tests_passed += 1
-        except AssertionError:
-            print("❌ Delete user failed")
-    print("=" * 50)
-    print(f"📊 Test Results: {tests_passed}/{total_tests} tests passed")
-    if tests_passed == total_tests:
-        print("🎉 All tests passed! The server is working correctly.")
-    else:
-        print("⚠️  Some tests failed. Check the server logs for more details.")
-    return tests_passed == total_tests
-
-if __name__ == "__main__":
-    print("⏳ Waiting 2 seconds for server to be ready...")
-    time.sleep(2)
-    success = run_all_tests()
-    exit(0 if success else 1) 
+    print(f"✅ User {user_id} deleted successfully") 
